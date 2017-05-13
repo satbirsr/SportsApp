@@ -4,7 +4,10 @@
       <title>Sports At A Glance</title>
       <link href="/styles.css" rel="stylesheet" type="text/css"  />
    </head>
-   <body> hey lol
-         <%= games %>
+   <body>
+      <% mlbGamesToday = JSON.parse(mlbGamesToday) %>
+      <% for (i = 0; i < mlbGamesToday.games.length; i++) { %>
+         <%= mlbGamesToday.games[i].label %> </br>
+      <% } %>
    </body>
 </html>

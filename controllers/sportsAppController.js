@@ -1,7 +1,7 @@
 var myToken = require('../private/myToken');
 var StattleshipAPI = require('node-stattleship');
 var stattleship = new StattleshipAPI(myToken.token);
-//okay i wrote something
+
 var request = require('request');
 var headers = {
    'Content-Type': 'application/json',
@@ -15,11 +15,11 @@ var options = {
    headers: headers
 };
 
-var gamesToday = {};
+var mlbGamesToday = {};
 
 function callback(error, response, body) {
    if (!error && response.statusCode == 200) {
-      gamesToday = body;
+      mlbGamesToday = body;
    }
 }
 
@@ -28,8 +28,7 @@ request(options, callback);
 module.exports = function(app) {
 
    app.get('/', function(req, res) {
-      res.render('sportsApp', {games: gamesToday});
-      //console.log(data);
+      res.render('sportsApp', {mlbGamesToday: mlbGamesToday});
    });
 
    app.post('/', function(res, req) {
