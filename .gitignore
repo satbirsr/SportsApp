@@ -51,3 +51,7 @@ Temporary Items
 
 #Private
 /private
+
+#Test Files
+.test.js
+.appoutput.txt
