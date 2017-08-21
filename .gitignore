@@ -53,5 +53,5 @@ Temporary Items
 /private
 
 #Test Files
-.test.js
-.appoutput.txt
+test.js
+appoutput.txt

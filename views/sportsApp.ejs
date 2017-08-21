@@ -1,12 +1,26 @@
 <!DOCTYPE html>
-<html>
-   <head>
+<html lang="en" ng-app="sportsApp">
+
+<head>
+      <!-- Required meta tags -->
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
       <title>Sports At A Glance</title>
-      <link href="/styles.css" rel="stylesheet" type="text/css"  />
-   </head>
-   <body>
-      <ul>
-            <li>Hey :)</li>
-      </ul>
-   </body>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.5/angular.min.js"></script>
+      <script src="front.js"></script>
+
+      <link rel="stylesheet" type="text/css" href="styles.css">
+
+</head>
+
+<body>
+      <div ng-controller="frontController">
+            <span>{{ firstName + " " + lastName }}</span>
+            <span>{{ ninjas }}</span>
+
+      </div>      
+</body>
+
 </html>

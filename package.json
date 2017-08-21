@@ -12,10 +12,13 @@
   "author": "Satbir Rehill",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.5.0",
     "body-parser": "^1.17.1",
     "dateformat": "^2.0.0",
     "ejs": "^2.5.6",
     "express": "^4.15.2",
-    "node-stattleship": "^1.1.1"
+    "node-stattleship": "^1.1.1",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.1"
   }
 }
