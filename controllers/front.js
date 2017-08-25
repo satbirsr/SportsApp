@@ -1,19 +1,27 @@
 var sportsApp = angular.module("sportsApp", []);
 
-sportsApp.controller("frontController", ['$scope', '$http', function ($scope, $http) {
+sportsApp.controller("frontController", ['$scope', '$http', '$interval', function ($scope, $http, $interval) {
     $scope.firstName = "John";
     $scope.lastName = "Doe";
 
-    console.log($scope.firstName + $scope.lastName);
+    fetchDataFromBackend();
 
-    $http({
-        method: 'GET',
-        url: '/data/games'
-    }).then(function (success) {
-        $scope.ninjas = success.data;
+    $interval(function () {
+        fetchDataFromBackend();
+    }, 5000);
 
-    }, function (error) {
 
-    });
+    function fetchDataFromBackend() {
+        $http({
+            method: 'GET',
+            url: '/data/games'
+
+        }).then(function (success) {
+            $scope.games = success.data;
+
+        }, function (error) {
+            console.log("Could not fetch data from /data/games");
+        });
+    }
 
 }]);

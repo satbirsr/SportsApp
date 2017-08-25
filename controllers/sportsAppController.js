@@ -23,11 +23,11 @@ var endpoints = [{
 }];
 
 
-var sportsAPI = {
-    "mlbGamesToday": {}, "mlbTeams": {},
-    "nhlGamesToday": {}, "nhlTeams": {},
-    "nbaGamesToday": {}, "nbaTeams": {},
-    "nflGamesToday": {}, "nflTeams": {}
+var stattleAPI = {
+    "mlbGamesToday": {}, "mlbGamesYesterday": {}, "mlbGamesTomorrow": {}, "mlbTeams": {},
+    "nhlGamesToday": {}, "nhlGamesYesterday": {}, "nhlGamesTomorrow": {}, "nhlTeams": {},
+    "nbaGamesToday": {}, "nbaGamesYesterday": {}, "nbaGamesTomorrow": {}, "nbaTeams": {},
+    "nflGamesToday": {}, "nflGamesYesterday": {}, "nflGamesTomorrow": {}, "nflTeams": {}
 };
 
 var leagueNames = ["mlb", "nhl", "nba", "nfl"];
@@ -36,10 +36,84 @@ var games = {}; // empty Object
 var key = 'mlb';
 games[key] = []; // empty Array, which you can push() values into
 
+fetchAndOrganizeData();
+
+setInterval(function () { 
+    games[key] = []; // Clear games and reload data
+    fetchAndOrganizeData();
+}, 120000);
+
+module.exports = function (app) {
+
+    app.get('/', function (req, res) {
+        res.render('sportsApp', {
+            //mlbGamesToday: mlbGamesToday
+        });
+    });
+
+    app.get('/data/games', function (req, res) {
+        res.json(games);
+    });
+
+    app.post('/', function (res, req) {
+
+    });
+
+    app.delete('/', function (res, req) {
+
+    });
+};
+
+
+
+
+
+//----------------------------FUNCTIONS----------------------------------
+function fetchAndOrganizeData() {
+    request(endpoints[0]).then(function (body) {
+        stattleAPI.mlbGamesToday = JSON.parse(body);
+
+        return request(endpoints[1]);
+    }).then(function (body) {
+        stattleAPI.mlbTeams = JSON.parse(body);
+        //console.log(mlbTeams.teams[0].location);
+    }).then(function () {
+        for (i = 0; i < stattleAPI.mlbGamesToday.games.length; i++) {
+
+            var gameDate = new Date(stattleAPI.mlbGamesToday.games[i].timestamp * 1000);
+            var timeString = dateFormat(gameDate, "shortTime");
+
+            var teams = stattleAPI.mlbGamesToday.games[i].label.split(" vs ");
+
+            if (stattleAPI.mlbGamesToday.games[i].status === "upcoming") {
+                customStatus = "@ " + timeString;
+
+            } else if (stattleAPI.mlbGamesToday.games[i].status === "in_progress") {
+                customStatus = "Ongoing";
+
+            } else {
+                customStatus = "Final";
+            }
+
+            games[key].push({
+                awayTeam: teams[0],
+                homeTeam: teams[1],
+                awayScore: stattleAPI.mlbGamesToday.games[i].away_team_score,
+                homeScore: stattleAPI.mlbGamesToday.games[i].home_team_score,
+                time: timeString,
+                status: customStatus
+            });
+        }
+
+        console.log(games);
+
+    });
+}
+
 var identifyTeamById = function (teamid) {
     return new Promise(function (resolve, reject) {
-        for (i = 0; i < sportsAPI.mlbTeams.teams.length; i++) {
-            if (sportsAPI.mlbTeams.teams[i].id === teamid) {
+        for (i = 0; i < stattleAPI.mlbTeams.teams.length; i++) {
+            if (stattleAPI.mlbTeams.teams[i].id === teamid) {
                 console.log(teamid);
                 resolve(i);
             }
@@ -47,26 +121,13 @@ var identifyTeamById = function (teamid) {
     });
 };
 
-//var mlbGamesToday = {};
-//var mlbTeams = {};
 
 
-request(endpoints[0]).then(function (body) {
-    sportsAPI.mlbGamesToday = JSON.parse(body);
-
-    return request(endpoints[1]);
-}).then(function (body) {
-    sportsAPI.mlbTeams = JSON.parse(body);
-    //console.log(mlbTeams.teams[0].location);
-});
-
-
-
-
-module.exports = function (app) {
-
-    app.get('/', function (req, res) {
-        // var d = new Date(1494720600 * 1000);
+//**************************************************************************************************************
+//**************************************************************************************************************
+//*********************************************OLD CODE*********************************************************
+//**********app.get('/', function (req, res) {
+                        // var d = new Date(1494720600 * 1000);
         // d.toLocaleTimeString();
         // dateFormat(d, "shortTime");
 
@@ -76,10 +137,7 @@ module.exports = function (app) {
         // console.log(mlbTeams.teams[teamElement].location + ' ' + mlbTeams.teams[teamElement].nickname);
         //console.log("here");
         //console.log(sportsAPI.mlbGamesToday);
-
-    
-
-        for (i = 0; i < sportsAPI.mlbGamesToday.games.length; i++) {
+//              for (i = 0; i < sportsAPI.mlbGamesToday.games.length; i++) { }}*/
             // homeTeamElement = identifyTeamById(sportsAPI.mlbGamesToday.games[0].home_team_id);
             // awayTeamElement = identifyTeamById(sportsAPI.mlbGamesToday.games[0].away_team_id);
             // homeTeamName = sportsAPI.mlbTeams.teams[homeTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[homeTeamElement].nickname;
@@ -109,43 +167,3 @@ module.exports = function (app) {
             //  console.log(homeTeamName + ' vs ' + awayTeamName);
             //  console.log(homeTeamName);
             //  console.log(awayTeamName);
-
-            if (sportsAPI.mlbGamesToday.games[i].status === "upcoming") {
-                var gameDate = new Date(sportsAPI.mlbGamesToday.games[i].timestamp * 1000);
-                var timeString = dateFormat(gameDate, "shortTime");                
-                
-                games[key].push(sportsAPI.mlbGamesToday.games[i].label + ' at ' + timeString +
-                    ' status: ' + sportsAPI.mlbGamesToday.games[i].status);
-                
-            } else if (sportsAPI.mlbGamesToday.games[i].status === "in_progress") {            
-                games[key].push(sportsAPI.mlbGamesToday.games[i].label + ' ' + sportsAPI.mlbGamesToday.games[i].away_team_score + ' ' +
-                    sportsAPI.mlbGamesToday.games[i].home_team_score);
-                                
-            } else {                        
-                games[key].push(sportsAPI.mlbGamesToday.games[i].label + ' ' + sportsAPI.mlbGamesToday.games[i].away_team_score +
-                    ' ' + sportsAPI.mlbGamesToday.games[i].home_team_score + ' ' + sportsAPI.mlbGamesToday.games[i].status);
-            }
-
-        }
-
-        console.log(games);
-
-
-        res.render('sportsApp', {
-            //mlbGamesToday: mlbGamesToday
-        });
-    });
-    
-
-    app.get('/data/games', function (req, res) {
-        res.json(games);
-    });
-
-    app.post('/', function (res, req) {
-
-    });
-
-    app.delete('/', function (res, req) {
-
-    });
-};
