@@ -1,15 +1,20 @@
-var sportsApp = angular.module("sportsApp", []);
+var sportsApp = angular.module("sportsApp", ['ngAnimate', 'ui.bootstrap']);
 
 sportsApp.controller("frontController", ['$scope', '$http', '$interval', function ($scope, $http, $interval) {
     $scope.firstName = "John";
     $scope.lastName = "Doe";
 
+    $scope.myData = {
+        firstname: 'John',
+        lastname: 'Doe',
+        employer: 'Stackoverflow'
+    };
+    
     fetchDataFromBackend();
 
     $interval(function () {
         fetchDataFromBackend();
-    }, 5000);
-
+    }, 30000);
 
     function fetchDataFromBackend() {
         $http({

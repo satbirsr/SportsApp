@@ -5,14 +5,15 @@
       <!-- Required meta tags -->
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
       <title>Sports At A Glance</title>
+
       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cyborg/bootstrap.min.css">
       <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.5/angular.min.js"></script>
+      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.5/angular-animate.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.js"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
       <script src="front.js"></script>
-
       <link rel="stylesheet" type="text/css" href="styles.css">
-
 </head>
 
 <body>
@@ -23,19 +24,43 @@
             </div>
 
             <div class="container">
-                  <table class="table" style="width:20%">
+                  <table class="table" style="width:25%">
                         <tr ng-repeat="game in games.mlb.slice().reverse() | filter: search">
                               <td>
                                     {{ game.awayTeam }} <br> {{ game.homeTeam }}
                               </td>
                               <td>
                                     {{ game.awayScore }} <br> {{ game.homeScore }}
-                                    <span style="float: right"> {{ game.status}} </span>
+                              </td>
+                              <td>                                    
+                                    <span style="float: right" popover-placement="right" uib-popover-template="'popover.ejs'"
+                                    popover-trigger="'mouseenter'">{{ game.status }}</span>
                               </td>
                         </tr>
                   </table>
             </div>
-      </div>
+      </div>      
 </body>
 
 </html>
+
+
+
+
+
+<!-- 
+ng-repeat doesn't work well with $(document).ready, since there's no guarantee that the $(document).ready call will be before
+the entire ng-repeat is loaded. This actually turns the question into more of an Angular question (which can be determined
+from your use of ng-repeat) from a Bootstrap question. Since there's no callback at the end of a ng-repeat loop, you could
+use directives instead. This would be the HTML for your table row:
+
+<tr ng-repeat="game in games.mlb" my-repeat-directive>
+       things go here
+</tr>
+And this would be your associated Javascript: 
+angular.module('myApp', []) 
+.directive('myRepeatDirective', function() 
+      { return function(scope, element, attrs) { 
+            // set your popovers per row element 
+      }; }) 
+-->

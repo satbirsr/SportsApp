@@ -1,5 +1,6 @@
 var Promise = require("bluebird");
 var request = require('request-promise');
+// require('request-debug')(request);
 var myToken = require('../private/myToken');
 var dateFormat = require('dateformat');
 var StattleshipAPI = require('node-stattleship');
@@ -11,10 +12,9 @@ var headers = {
     'Accept': 'application/vnd.stattleship.com; version=1',
 };
 
-
-var endpoints = [{
+var gameEndpoints = [{
     //MLB GAMES ON TODAY
-    url: 'https://api.stattleship.com/baseball/mlb/games/?on=today',
+    url: 'https://api.stattleship.com/baseball/mlb/games/?on=yesterday',
     headers: headers
 }, {
     //MLB TEAMS
@@ -22,26 +22,274 @@ var endpoints = [{
     headers: headers
 }];
 
+var logEndpoints = [{
+    //MLB GAME LOGS
+    url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=yesterday',
+    headers: headers
+}];
 
-var stattleAPI = {
-    "mlbGamesToday": {}, "mlbGamesYesterday": {}, "mlbGamesTomorrow": {}, "mlbTeams": {},
-    "nhlGamesToday": {}, "nhlGamesYesterday": {}, "nhlGamesTomorrow": {}, "nhlTeams": {},
-    "nbaGamesToday": {}, "nbaGamesYesterday": {}, "nbaGamesTomorrow": {}, "nbaTeams": {},
-    "nflGamesToday": {}, "nflGamesYesterday": {}, "nflGamesTomorrow": {}, "nflTeams": {}
-};
+var stattleAPI = [
+    { "league": "mlb", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": [{}] },
+    { "league": "nba", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": {} },
+    { "league": "nfl", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": {} },
+    { "league": "nhl", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": {} }
+];
 
 var leagueNames = ["mlb", "nhl", "nba", "nfl"];
 
-var games = {}; // empty Object
 var key = 'mlb';
+var games = {}; // empty Object
 games[key] = []; // empty Array, which you can push() values into
+var logs = {};
+logs[key] = [];
+var isPaginated;
 
 fetchAndOrganizeData();
 
-setInterval(function () { 
-    games[key] = []; // Clear games and reload data
+setInterval(function () {
+    // logEndpoints = []; // Clear games and reload data
+    games[key] = [];
     fetchAndOrganizeData();
-}, 120000);
+    console.log("-----------------------------------");
+}, 60000);
+
+
+
+
+
+
+
+//----------------------------FUNCTIONS----------------------------------
+function fetchAndOrganizeData() {
+    //FETCH GAMES
+    Promise.map(gameEndpoints, function (obj) {
+        return request(obj, function (error, response, body) {
+        }).then(function (body) {
+            return JSON.parse(body);
+        });
+
+    }).then(function (gameResults) {
+        stattleAPI[0].gamesToday = gameResults[0];
+        stattleAPI[0].teams = gameResults[1];
+
+    }, function (err) {
+        // handle all your errors here
+    }).then(function () {
+        for (i = 0; i < stattleAPI[0].gamesToday.games.length; i++) {
+
+            var gameDate = new Date(stattleAPI[0].gamesToday.games[i].timestamp * 1000);
+            var timeString = dateFormat(gameDate, "shortTime");
+            var teams = stattleAPI[0].gamesToday.games[i].label.split(" vs ");
+
+            for (j = 0; j < stattleAPI[0].teams.teams.length; j++) {
+                if (stattleAPI[0].teams.teams[j].id === stattleAPI[0].gamesToday.games[i].away_team_id) {
+                    teams[0] = stattleAPI[0].teams.teams[j].location + " " + stattleAPI[0].teams.teams[j].nickname;
+                }
+            }
+            for (j = 0; j < stattleAPI[0].teams.teams.length; j++) {
+                if (stattleAPI[0].teams.teams[j].id === stattleAPI[0].gamesToday.games[i].home_team_id) {
+                    teams[1] = stattleAPI[0].teams.teams[j].location + " " + stattleAPI[0].teams.teams[j].nickname;
+                }
+            }
+
+            console.log(teams[0] + " vs " + teams[1]);
+
+
+
+            //Generating Status of each game (Upcoming, In progress, Final)
+            if (stattleAPI[0].gamesToday.games[i].status === "upcoming") {
+                customStatus = "@ " + timeString;
+                stattleAPI[0].gamesToday.games[i].away_team_score = "";
+                stattleAPI[0].gamesToday.games[i].home_team_score = "";
+
+            } else if (stattleAPI[0].gamesToday.games[i].status === "in_progress") {
+
+                if (stattleAPI[0].gamesToday.games[i].clock === ":30") {
+                    topbottom = "BOT";
+                } else {
+                    topbottom = "TOP";
+                }
+
+                //1st, 2nd, 3rd, Xth... inning
+                if (stattleAPI[0].gamesToday.games[i].period === 1) {
+                    customStatus = topbottom + " " + stattleAPI[0].gamesToday.games[i].period + "st";
+                } else if (stattleAPI[0].gamesToday.games[i].period === 2) {
+                    customStatus = topbottom + " " + stattleAPI[0].gamesToday.games[i].period + "nd";
+                } else if (stattleAPI[0].gamesToday.games[i].period === 3) {
+                    customStatus = topbottom + " " + stattleAPI[0].gamesToday.games[i].period + "rd";
+                } else {
+                    customStatus = topbottom + " " + stattleAPI[0].gamesToday.games[i].period + "th";
+                }
+
+            } else {
+                customStatus = "Final";
+            }
+
+            //Push game to backend json data
+            games[key].push({
+                awayTeam: teams[0],
+                homeTeam: teams[1],
+                awayScore: stattleAPI[0].gamesToday.games[i].away_team_score,
+                homeScore: stattleAPI[0].gamesToday.games[i].home_team_score,
+                time: timeString,
+                status: customStatus,
+                id: stattleAPI[0].gamesToday.games[i].id
+            });
+        }
+
+        //FETCH GAME LOGS
+    }).then(function () {
+        return request(logEndpoints[0], function (error, response, body) {
+            if (response.headers.link) { //If source has multiple pages
+                isPaginated = true;
+                linkHeader = response.headers.link;
+            }
+        }).then(function (body) {
+            // console.log(body);            
+            return JSON.parse(body);
+        }).then(function (results) {
+
+            stattleAPI[0].gameLogs[0] = results; //Store first page
+
+            if (isPaginated) { //If multiple pages, get the other pages as well
+                // fetchMultiplePages(linkHeader).then(function () {
+                // console.log(stattleAPI[0].gameLogs[1]);
+                // });
+                fetchMultiplePages(linkHeader, function () {
+                    // console.log(stattleAPI[0].gameLogs[1]);
+
+                    for (h = 0; h < stattleAPI[0].gameLogs.length; h++) {
+
+                        for (i = 0; i < stattleAPI[0].gameLogs[h].players.length; i++) {
+
+                            //Get Player's Team
+                            for (j = 0; j < stattleAPI[0].teams.teams.length; j++) {
+                                if (stattleAPI[0].gameLogs[h].players[i].team_id === stattleAPI[0].teams.teams[j].id) {
+                                    var teamName = stattleAPI[0].teams.teams[j].location + " " + stattleAPI[0].teams.teams[j].nickname;
+                                }
+                            }
+
+                            // Get Player's Game Stats
+                            for (j = 0; j < stattleAPI[0].gameLogs[h].game_logs.length; j++) {
+                                if (stattleAPI[0].gameLogs[h].players[i].id === stattleAPI[0].gameLogs[h].game_logs[j].player_id) {
+                                    atBats = stattleAPI[0].gameLogs[h].game_logs[j].at_bats;
+                                    runs = stattleAPI[0].gameLogs[h].game_logs[j].runs;
+                                    hits = stattleAPI[0].gameLogs[h].game_logs[j].hits;
+                                    rbi = stattleAPI[0].gameLogs[h].game_logs[j].runs_batted_in;
+                                    walks = stattleAPI[0].gameLogs[h].game_logs[j].walks;
+                                    strikeouts = stattleAPI[0].gameLogs[h].game_logs[j].strikeouts;
+                                    lob = stattleAPI[0].gameLogs[h].game_logs[j].left_on_base;
+                                    avg = stattleAPI[0].gameLogs[h].game_logs[j].batting_average;
+                                    onbaseperc = stattleAPI[0].gameLogs[h].game_logs[j].on_base_percentage;
+                                    onbase_slugging = stattleAPI[0].gameLogs[h].game_logs[j].on_base_plus_slugging;
+                                    id = stattleAPI[0].gameLogs[h].game_logs[j].player_id;
+                                }
+                            }
+
+                            logs[key].push({
+                                playerName: stattleAPI[0].gameLogs[h].players[i].first_name + " "
+                                + stattleAPI[0].gameLogs[h].players[i].last_name,
+                                position: stattleAPI[0].gameLogs[h].players[i].position_abbreviation,
+                                teamName: teamName,
+                                atBats: atBats,
+                                runs: runs,
+                                hits: hits,
+                                rbi: rbi,
+                                walks: walks,
+                                strikeouts: strikeouts,
+                                lob: lob,
+                                avg: avg,
+                                onbaseperc: onbaseperc,
+                                onbase_slugging: onbase_slugging,
+                                id: id
+                            });
+                        }
+                    }
+
+                });
+                console.log("here");
+
+            }
+
+            // for (i = 0; i < logEndpoints.length; i++) {
+            //     stattleAPI[0].gameLogs[i] = "c";
+            // }
+            // console.log(results);
+        }).then(function () {
+            // setTimeout(function() {
+            //     console.log(stattleAPI[0].gameLogs[1]);
+            // }, 5000);
+
+        })
+
+    });
+}
+
+function fetchMultiplePages(linkHeader, callback) {
+
+    console.log(linkHeader);
+
+    var lastPageString = linkHeader.match(/page=\d*>; rel="last"/);
+    var nPages = lastPageString[0].match(/\d+/);
+    console.log(nPages[0]);
+
+    logEndpoints = [];
+
+    logEndpoints.push({
+        url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=yesterday',
+        headers: headers
+    });
+
+    for (i = 2; i <= nPages; i++) {
+        logEndpoints.push({
+            url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=yesterday&page=' + i,
+            headers: headers
+        });
+    }
+
+    for (i = 0; i < logEndpoints.length; i++) {
+        console.log(logEndpoints[i].url);
+    }
+
+    Promise.map(logEndpoints, function (obj) {
+        return request(obj, function (error, response, body) {
+        }).then(function (body) {
+            // console.log("heya");
+            return JSON.parse(body);
+
+
+        });
+
+    }).then(function (logResults) {
+        for (i = 1; i < logEndpoints.length; i++) {
+            stattleAPI[0].gameLogs[i] = logResults[i];
+        }
+        // console.log("sup?");
+
+        callback();
+
+        // console.log(stattleAPI[0].gameLogs[1]);
+
+    }, function (err) {
+        // handle all your errors here
+    })
+}
+
+
+var identifyTeamById = function (teamid) {
+    return new Promise(function (resolve, reject) {
+        for (i = 0; i < stattleAPI[0].teams.teams.length; i++) {
+            if (stattleAPI[0].teams.teams[i].id === teamid) {
+                console.log(teamid);
+                resolve(i);
+            }
+        }
+    });
+};
+//--------------------------------------------------------------------------
+
+
+//--------------------------------ROUTES-------------------------------------
 
 module.exports = function (app) {
 
@@ -51,8 +299,29 @@ module.exports = function (app) {
         });
     });
 
+    app.get('/popover.ejs', function (req, res) {
+        res.render('popover.ejs', {
+            //mlbGamesToday: mlbGamesToday
+        });
+    });
+
     app.get('/data/games', function (req, res) {
         res.json(games);
+    });
+
+    app.get('/data/logs', function (req, res) {
+        // res.json(stattleAPI[0].gameLogs[1]);
+        res.json(logs);
+    });
+
+    app.get('/data/rawjson', function (req, res) {
+        res.json(stattleAPI[0].gamesToday);
+        // res.json(stattleAPI[0].gameLogs);
+    });
+
+    app.get('/data/teams', function (req, res) {
+        res.json(stattleAPI[0].teams);
+        // res.json(stattleAPI[0].gameLogs);
     });
 
     app.post('/', function (res, req) {
@@ -68,102 +337,21 @@ module.exports = function (app) {
 
 
 
-//----------------------------FUNCTIONS----------------------------------
-function fetchAndOrganizeData() {
-    request(endpoints[0]).then(function (body) {
-        stattleAPI.mlbGamesToday = JSON.parse(body);
+//***************PROMISE MAP***************** */
+// Promise.map(endpoints, function (obj) {
+//     return request(obj).then(function (body) {
+//         console.log(response.statusCode);
+//         console.log("here");
+//         return JSON.parse(body);
+//     });
 
-        return request(endpoints[1]);
-    }).then(function (body) {
-        stattleAPI.mlbTeams = JSON.parse(body);
-        //console.log(mlbTeams.teams[0].location);
-    }).then(function () {
-        for (i = 0; i < stattleAPI.mlbGamesToday.games.length; i++) {
+// }).then(function (results) {
+//     // stattleAPI.mlbGamesToday = results[0];
+//     // stattleAPI.mlbTeams = results[1];
+//     stattleAPI[0].gamesToday = results[0];
+//     stattleAPI[0].teams = results[1];
+//     stattleAPI[0].gameLogs = results[2];
 
-            var gameDate = new Date(stattleAPI.mlbGamesToday.games[i].timestamp * 1000);
-            var timeString = dateFormat(gameDate, "shortTime");
+//     //console.log(results[2].headers);
 
-            var teams = stattleAPI.mlbGamesToday.games[i].label.split(" vs ");
-
-            if (stattleAPI.mlbGamesToday.games[i].status === "upcoming") {
-                customStatus = "@ " + timeString;
-
-            } else if (stattleAPI.mlbGamesToday.games[i].status === "in_progress") {
-                customStatus = "Ongoing";
-
-            } else {
-                customStatus = "Final";
-            }
-
-            games[key].push({
-                awayTeam: teams[0],
-                homeTeam: teams[1],
-                awayScore: stattleAPI.mlbGamesToday.games[i].away_team_score,
-                homeScore: stattleAPI.mlbGamesToday.games[i].home_team_score,
-                time: timeString,
-                status: customStatus
-            });
-        }
-
-        console.log(games);
-
-    });
-}
-
-var identifyTeamById = function (teamid) {
-    return new Promise(function (resolve, reject) {
-        for (i = 0; i < stattleAPI.mlbTeams.teams.length; i++) {
-            if (stattleAPI.mlbTeams.teams[i].id === teamid) {
-                console.log(teamid);
-                resolve(i);
-            }
-        }
-    });
-};
-
-
-
-//**************************************************************************************************************
-//**************************************************************************************************************
-//*********************************************OLD CODE*********************************************************
-//**********app.get('/', function (req, res) {
-                        // var d = new Date(1494720600 * 1000);
-        // d.toLocaleTimeString();
-        // dateFormat(d, "shortTime");
-
-        // console.log(mlbGamesToday.games[0].home_team_id);
-        // teamElement = identifyTeamById(mlbGamesToday.games[0].home_team_id);
-        // console.log(teamElement);
-        // console.log(mlbTeams.teams[teamElement].location + ' ' + mlbTeams.teams[teamElement].nickname);
-        //console.log("here");
-        //console.log(sportsAPI.mlbGamesToday);
-//              for (i = 0; i < sportsAPI.mlbGamesToday.games.length; i++) { }}*/
-            // homeTeamElement = identifyTeamById(sportsAPI.mlbGamesToday.games[0].home_team_id);
-            // awayTeamElement = identifyTeamById(sportsAPI.mlbGamesToday.games[0].away_team_id);
-            // homeTeamName = sportsAPI.mlbTeams.teams[homeTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[homeTeamElement].nickname;
-            // awayTeamName = sportsAPI.mlbTeams.teams[awayTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[awayTeamElement].nickname;
-            // console.log(homeTeamName + ' vs ' + awayTeamName);
-            // console.log(homeTeamName);
-            // console.log(awayTeamName);
-
-            //  identifyTeamById(sportsAPI.mlbGamesToday.games[0].away_team_id).then(function(element) {
-            //     awayTeamElement = element;
-            //     awayTeamName = sportsAPI.mlbTeams.teams[awayTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[awayTeamElement].nickname;
-            //     console.log(awayTeamName);
-
-            //     return identifyTeamById(sportsAPI.mlbGamesToday.games[0].home_team_id);
-            //  }).then(function(element) {
-            //     homeTeamElement = element;
-            //     homeTeamName = sportsAPI.mlbTeams.teams[homeTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[homeTeamElement].nickname;
-            //     console.log(homeTeamName);
-
-            //  }).catch(function(error) {
-            //     console.log(error);
-            //  });
-
-            //awayTeamElement = identifyTeamById(sportsAPI.mlbGamesToday.games[i].away_team_id);
-            //  homeTeamName = sportsAPI.mlbTeams.teams[homeTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[homeTeamElement].nickname;
-            //  awayTeamName = sportsAPI.mlbTeams.teams[awayTeamElement].location + ' ' + sportsAPI.mlbTeams.teams[awayTeamElement].nickname;
-            //  console.log(homeTeamName + ' vs ' + awayTeamName);
-            //  console.log(homeTeamName);
-            //  console.log(awayTeamName);
+// }, function (err) {
