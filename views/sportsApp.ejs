@@ -23,44 +23,94 @@
                   <input type="text" class="form-control text-center" placeholder="Filter" ng-model="search">
             </div>
 
-            <div class="container">
-                  <table class="table" style="width:25%">
-                        <tr ng-repeat="game in games.mlb.slice().reverse() | filter: search">
-                              <td>
-                                    {{ game.awayTeam }} <br> {{ game.homeTeam }}
-                              </td>
-                              <td>
-                                    {{ game.awayScore }} <br> {{ game.homeScore }}
-                              </td>
-                              <td>                                    
-                                    <span style="float: right" popover-placement="right" uib-popover-template="'popover.ejs'"
-                                    popover-trigger="'mouseenter'">{{ game.status }}</span>
-                              </td>
-                        </tr>
-                  </table>
+            <div class="row container-fixed">
+                  <div class="col-md-3">
+                        <table class="table">
+                              <tr ng-repeat="game in games.mlb.slice().reverse() | filter: search">
+                                    <td>
+                                          {{ game.awayTeam }} <br> {{ game.homeTeam }}
+                                    </td>
+                                    <td>
+                                          {{ game.awayScore }} <br> {{ game.homeScore }}
+                                    </td>
+                                    <td>
+                                          <span ng-mouseover="showPopover=true" ng-mouseleave="showPopover=false">
+                                          <span style="float: right" popover-placement="right"
+                                           uib-popover-template="'popover.ejs'" popover-is-open="showPopover && {{ game.makeGameLog }}">{{ game.status }}
+                                          </span>
+                                          </span>
+                                    </td>
+                              </tr>
+                        </table>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                        <table class="table">
+                              <!-- <tr ng-repeat="game in games.mlb.slice().reverse() | filter: search"> -->
+                              <tr>
+                                    <td>
+                                          To be completed (NBA)
+                                          <!-- {{ game.awayTeam }} <br> {{ game.homeTeam }} -->
+                                    </td>
+                                    <!-- <td> -->
+                                    <!-- {{ game.awayScore }} <br> {{ game.homeScore }} -->
+                                    <!-- </td> -->
+                                    <!-- <td> -->
+                                    <!-- <span ng-init="hoveringStatus=false" ng-mouseover="hoveringStatus=true; showPopover=true" ng-mouseleave="hoveringStatus=false; showPopover=false">
+                                          <span style="float: right" popover-placement="right" popover-is-open="showPopover"
+                                           uib-popover-template="'popover.ejs'" popover-trigger="none">{{ showPopover }} {{ game.status }}
+                                          </span>
+                                    </span> -->
+                                    <!-- </td> -->
+                              </tr>
+                        </table>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                        <table class="table">
+                              <!-- <tr ng-repeat="game in games.mlb.slice().reverse() | filter: search"> -->
+                              <tr>
+                                    <td>
+                                          To be completed (NBA)
+                                          <!-- {{ game.awayTeam }} <br> {{ game.homeTeam }} -->
+                                    </td>
+                                    <!-- <td> -->
+                                    <!-- {{ game.awayScore }} <br> {{ game.homeScore }} -->
+                                    <!-- </td> -->
+                                    <!-- <td> -->
+                                    <!-- <span ng-init="hoveringStatus=false" ng-mouseover="hoveringStatus=true; showPopover=true" ng-mouseleave="hoveringStatus=false; showPopover=false">
+                                          <span style="float: right" popover-placement="right" popover-is-open="showPopover"
+                                           uib-popover-template="'popover.ejs'" popover-trigger="none">{{ showPopover }} {{ game.status }}
+                                          </span>
+                                    </span> -->
+                                    <!-- </td> -->
+                              </tr>
+                        </table>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                        <table class="table">
+                              <!-- <tr ng-repeat="game in games.mlb.slice().reverse() | filter: search"> -->
+                              <tr>
+                                    <td>
+                                          To be completed (NBA)
+                                          <!-- {{ game.awayTeam }} <br> {{ game.homeTeam }} -->
+                                    </td>
+                                    <!-- <td> -->
+                                    <!-- {{ game.awayScore }} <br> {{ game.homeScore }} -->
+                                    <!-- </td> -->
+                                    <!-- <td> -->
+                                    <!-- <span ng-init="hoveringStatus=false" ng-mouseover="hoveringStatus=true; showPopover=true" ng-mouseleave="hoveringStatus=false; showPopover=false">
+                                          <span style="float: right" popover-placement="right" popover-is-open="showPopover"
+                                           uib-popover-template="'popover.ejs'" popover-trigger="none">{{ showPopover }} {{ game.status }}
+                                          </span>
+                                    </span> -->
+                                    <!-- </td> -->
+                              </tr>
+                        </table>
+                  </div>
             </div>
-      </div>      
+      </div>
 </body>
 
 </html>
-
-
-
-
-
-<!-- 
-ng-repeat doesn't work well with $(document).ready, since there's no guarantee that the $(document).ready call will be before
-the entire ng-repeat is loaded. This actually turns the question into more of an Angular question (which can be determined
-from your use of ng-repeat) from a Bootstrap question. Since there's no callback at the end of a ng-repeat loop, you could
-use directives instead. This would be the HTML for your table row:
-
-<tr ng-repeat="game in games.mlb" my-repeat-directive>
-       things go here
-</tr>
-And this would be your associated Javascript: 
-angular.module('myApp', []) 
-.directive('myRepeatDirective', function() 
-      { return function(scope, element, attrs) { 
-            // set your popovers per row element 
-      }; }) 
--->

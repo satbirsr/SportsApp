@@ -1,4 +1,64 @@
-<div>
-    <h1>Boxscore</h1>
-        {{ game.id }}
+<div ng-controller="frontController">
+    <table>
+        <tr>
+            <th> {{ game.awayTeam }} </th>
+            <th> {{ game.homeTeam }} </th>
+        </tr>
+
+        <tr>
+            <td valign="top">
+                <table class="table" id="popoverTable">
+                    <tr style="font-size:10px">
+                        <th> Name </th> 
+                        <th> AB </th>
+                        <th> R </th>
+                        <th> H </th>
+                        <th> RBI </th>
+                        <th> BB </th>
+                        <th> LOB </th>
+                        <th> AVG </th>
+                        <th> OPS </th>
+                    </tr>
+                    <tr ng-repeat="player in logs.mlb | filter: { teamName: game.awayTeam }" style="font-size:10px">
+                        <td> {{ player.playerName }} </td>
+                        <td> {{ player.atBats }} </td>
+                        <td> {{ player.runs }} </td>
+                        <td> {{ player.hits }} </td>
+                        <td> {{ player.rbi }} </td>
+                        <td> {{ player.walks }} </td>
+                        <td> {{ player.lob }} </td>
+                        <td> {{ player.avg }} </td>
+                        <td> {{ player.onbase_slugging }} </td>
+                    </tr>
+                </table>
+            </td>
+
+            <td valign="top">
+                <table class="table" id="popoverTable">
+                    <tr style="font-size:10px">
+                        <th> Name </th>
+                        <th> AB </th>
+                        <th> R </th>
+                        <th> H </th>
+                        <th> RBI </th>
+                        <th> BB </th>
+                        <th> LOB </th>
+                        <th> AVG </th>
+                        <th> OPS </th>
+                    </tr>
+                    <tr ng-repeat="player in logs.mlb | filter: { teamName: game.homeTeam }" style="font-size:10px">
+                        <td> {{ player.playerName }} </td>
+                        <td> {{ player.atBats }} </td>
+                        <td> {{ player.runs }} </td>
+                        <td> {{ player.hits }} </td>
+                        <td> {{ player.rbi }} </td>
+                        <td> {{ player.walks }} </td>
+                        <td> {{ player.lob }} </td>
+                        <td> {{ player.avg }} </td>
+                        <td> {{ player.onbase_slugging }} </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </div>

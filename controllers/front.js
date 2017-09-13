@@ -1,21 +1,38 @@
 var sportsApp = angular.module("sportsApp", ['ngAnimate', 'ui.bootstrap']);
 
 sportsApp.controller("frontController", ['$scope', '$http', '$interval', function ($scope, $http, $interval) {
-    $scope.firstName = "John";
-    $scope.lastName = "Doe";
 
-    $scope.myData = {
-        firstname: 'John',
-        lastname: 'Doe',
-        employer: 'Stackoverflow'
-    };
-    
     fetchDataFromBackend();
 
     $interval(function () {
         fetchDataFromBackend();
-    }, 30000);
+    }, 60000);
 
+    // $scope.showPopover = false;
+
+
+
+    $scope.popoverOpened1 = false;
+
+
+    $scope.rowNames = ['linear', 'quadratic'];
+    $scope.rowData = {
+        'linear': [1, 2, 3, 4, 5, 6],
+        'quadratic': [1, 4, 9, 16, 25, 36]
+    };
+
+    $scope.getRowData = function (row) {
+        console.log("getRowData: " + row);
+        return $scope.rowData[row];
+    }
+    
+    $scope.filterCells = function (v) {
+        return v > 5.0 ? 'true' : 'false';
+    };
+
+
+    //------------------------------------------------------------------------------
+    //-------------------------------FUNCTIONS--------------------------------------
     function fetchDataFromBackend() {
         $http({
             method: 'GET',
@@ -27,6 +44,31 @@ sportsApp.controller("frontController", ['$scope', '$http', '$interval', functio
         }, function (error) {
             console.log("Could not fetch data from /data/games");
         });
-    }
 
+        $http({
+            method: 'GET',
+            url: '/data/logs'
+
+        }).then(function (success) {
+            $scope.logs = success.data;
+
+        }, function (error) {
+            console.log("Could not fetch data from /data/logs");
+        });
+        
+    }
+    
+    $scope.filterPopover = function (v) {
+        console.log(v);
+        
+        if ( v === "@ 7:10 PM") {
+            // console.log(v);
+            
+            return true;
+        } else {
+            console.log('false');
+            
+            return false;
+        }    
+    };
 }]);

@@ -14,7 +14,7 @@ var headers = {
 
 var gameEndpoints = [{
     //MLB GAMES ON TODAY
-    url: 'https://api.stattleship.com/baseball/mlb/games/?on=yesterday',
+    url: 'https://api.stattleship.com/baseball/mlb/games/?on=today',
     headers: headers
 }, {
     //MLB TEAMS
@@ -24,15 +24,15 @@ var gameEndpoints = [{
 
 var logEndpoints = [{
     //MLB GAME LOGS
-    url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=yesterday',
+    url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=today',
     headers: headers
 }];
 
 var stattleAPI = [
     { "league": "mlb", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": [{}] },
-    { "league": "nba", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": {} },
-    { "league": "nfl", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": {} },
-    { "league": "nhl", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": {} }
+    { "league": "nba", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": [{}] },
+    { "league": "nfl", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": [{}] },
+    { "league": "nhl", "gamesToday": {}, "gamesYesterday": {}, "gamesTomorrow": {}, "teams": {}, "gameLogs": [{}] }
 ];
 
 var leagueNames = ["mlb", "nhl", "nba", "nfl"];
@@ -42,16 +42,17 @@ var games = {}; // empty Object
 games[key] = []; // empty Array, which you can push() values into
 var logs = {};
 logs[key] = [];
-var isPaginated;
+var isPaginated, totalItems;
 
 fetchAndOrganizeData();
 
 setInterval(function () {
     // logEndpoints = []; // Clear games and reload data
     games[key] = [];
+    logs[key] = [];
     fetchAndOrganizeData();
     console.log("-----------------------------------");
-}, 60000);
+}, 180000);
 
 
 
@@ -101,6 +102,7 @@ function fetchAndOrganizeData() {
                 customStatus = "@ " + timeString;
                 stattleAPI[0].gamesToday.games[i].away_team_score = "";
                 stattleAPI[0].gamesToday.games[i].home_team_score = "";
+                makeGameLog = "false";
 
             } else if (stattleAPI[0].gamesToday.games[i].status === "in_progress") {
 
@@ -121,8 +123,11 @@ function fetchAndOrganizeData() {
                     customStatus = topbottom + " " + stattleAPI[0].gamesToday.games[i].period + "th";
                 }
 
+                makeGameLog = "true";
+
             } else {
                 customStatus = "Final";
+                makeGameLog = "true";
             }
 
             //Push game to backend json data
@@ -133,16 +138,23 @@ function fetchAndOrganizeData() {
                 homeScore: stattleAPI[0].gamesToday.games[i].home_team_score,
                 time: timeString,
                 status: customStatus,
-                id: stattleAPI[0].gamesToday.games[i].id
+                id: stattleAPI[0].gamesToday.games[i].id,
+                makeGameLog: makeGameLog
             });
         }
 
         //FETCH GAME LOGS
     }).then(function () {
         return request(logEndpoints[0], function (error, response, body) {
+
+            console.log(response.headers.total);
+            totalItems = response.headers.total;
+
             if (response.headers.link) { //If source has multiple pages
                 isPaginated = true;
                 linkHeader = response.headers.link;
+                console.log("Source has multiple pages");
+
             }
         }).then(function (body) {
             // console.log(body);            
@@ -152,63 +164,11 @@ function fetchAndOrganizeData() {
             stattleAPI[0].gameLogs[0] = results; //Store first page
 
             if (isPaginated) { //If multiple pages, get the other pages as well
-                // fetchMultiplePages(linkHeader).then(function () {
-                // console.log(stattleAPI[0].gameLogs[1]);
-                // });
                 fetchMultiplePages(linkHeader, function () {
-                    // console.log(stattleAPI[0].gameLogs[1]);
-
-                    for (h = 0; h < stattleAPI[0].gameLogs.length; h++) {
-
-                        for (i = 0; i < stattleAPI[0].gameLogs[h].players.length; i++) {
-
-                            //Get Player's Team
-                            for (j = 0; j < stattleAPI[0].teams.teams.length; j++) {
-                                if (stattleAPI[0].gameLogs[h].players[i].team_id === stattleAPI[0].teams.teams[j].id) {
-                                    var teamName = stattleAPI[0].teams.teams[j].location + " " + stattleAPI[0].teams.teams[j].nickname;
-                                }
-                            }
-
-                            // Get Player's Game Stats
-                            for (j = 0; j < stattleAPI[0].gameLogs[h].game_logs.length; j++) {
-                                if (stattleAPI[0].gameLogs[h].players[i].id === stattleAPI[0].gameLogs[h].game_logs[j].player_id) {
-                                    atBats = stattleAPI[0].gameLogs[h].game_logs[j].at_bats;
-                                    runs = stattleAPI[0].gameLogs[h].game_logs[j].runs;
-                                    hits = stattleAPI[0].gameLogs[h].game_logs[j].hits;
-                                    rbi = stattleAPI[0].gameLogs[h].game_logs[j].runs_batted_in;
-                                    walks = stattleAPI[0].gameLogs[h].game_logs[j].walks;
-                                    strikeouts = stattleAPI[0].gameLogs[h].game_logs[j].strikeouts;
-                                    lob = stattleAPI[0].gameLogs[h].game_logs[j].left_on_base;
-                                    avg = stattleAPI[0].gameLogs[h].game_logs[j].batting_average;
-                                    onbaseperc = stattleAPI[0].gameLogs[h].game_logs[j].on_base_percentage;
-                                    onbase_slugging = stattleAPI[0].gameLogs[h].game_logs[j].on_base_plus_slugging;
-                                    id = stattleAPI[0].gameLogs[h].game_logs[j].player_id;
-                                }
-                            }
-
-                            logs[key].push({
-                                playerName: stattleAPI[0].gameLogs[h].players[i].first_name + " "
-                                + stattleAPI[0].gameLogs[h].players[i].last_name,
-                                position: stattleAPI[0].gameLogs[h].players[i].position_abbreviation,
-                                teamName: teamName,
-                                atBats: atBats,
-                                runs: runs,
-                                hits: hits,
-                                rbi: rbi,
-                                walks: walks,
-                                strikeouts: strikeouts,
-                                lob: lob,
-                                avg: avg,
-                                onbaseperc: onbaseperc,
-                                onbase_slugging: onbase_slugging,
-                                id: id
-                            });
-                        }
-                    }
-
+                    organizeLogs();
                 });
-                console.log("here");
-
+            } else if (totalItems > 0) {
+                organizeLogs();
             }
 
             // for (i = 0; i < logEndpoints.length; i++) {
@@ -236,13 +196,13 @@ function fetchMultiplePages(linkHeader, callback) {
     logEndpoints = [];
 
     logEndpoints.push({
-        url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=yesterday',
+        url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=today',
         headers: headers
     });
 
     for (i = 2; i <= nPages; i++) {
         logEndpoints.push({
-            url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=yesterday&page=' + i,
+            url: 'https://api.stattleship.com/baseball/mlb/game_logs/?on=today&page=' + i,
             headers: headers
         });
     }
@@ -275,6 +235,59 @@ function fetchMultiplePages(linkHeader, callback) {
     })
 }
 
+function organizeLogs() {
+
+    for (h = 0; h < stattleAPI[0].gameLogs.length; h++) {
+
+        for (i = 0; i < stattleAPI[0].gameLogs[h].players.length; i++) {
+
+            //Get Player's Team
+            for (j = 0; j < stattleAPI[0].teams.teams.length; j++) {
+                if (stattleAPI[0].gameLogs[h].players[i].team_id === stattleAPI[0].teams.teams[j].id) {
+                    var teamName = stattleAPI[0].teams.teams[j].location + " " + stattleAPI[0].teams.teams[j].nickname;
+                }
+            }
+
+            // Get Player's Game Stats
+            for (j = 0; j < stattleAPI[0].gameLogs[h].game_logs.length; j++) {
+                if (stattleAPI[0].gameLogs[h].players[i].id === stattleAPI[0].gameLogs[h].game_logs[j].player_id) {
+                    atBats = stattleAPI[0].gameLogs[h].game_logs[j].at_bats;
+                    runs = stattleAPI[0].gameLogs[h].game_logs[j].runs;
+                    hits = stattleAPI[0].gameLogs[h].game_logs[j].hits;
+                    rbi = stattleAPI[0].gameLogs[h].game_logs[j].runs_batted_in;
+                    walks = stattleAPI[0].gameLogs[h].game_logs[j].walks;
+                    strikeouts = stattleAPI[0].gameLogs[h].game_logs[j].strikeouts;
+                    lob = stattleAPI[0].gameLogs[h].game_logs[j].left_on_base;
+                    avg = stattleAPI[0].gameLogs[h].game_logs[j].batting_average;
+                    onbaseperc = stattleAPI[0].gameLogs[h].game_logs[j].on_base_percentage;
+                    onbase_slugging = stattleAPI[0].gameLogs[h].game_logs[j].on_base_plus_slugging;
+                    id = stattleAPI[0].gameLogs[h].game_logs[j].player_id;
+                    game_id = stattleAPI[0].gameLogs[h].game_logs[j].game_id;
+                }
+            }
+
+            logs[key].push({
+                playerName: stattleAPI[0].gameLogs[h].players[i].first_name + " "
+                + stattleAPI[0].gameLogs[h].players[i].last_name,
+                position: stattleAPI[0].gameLogs[h].players[i].position_abbreviation,
+                teamName: teamName,
+                atBats: atBats,
+                runs: runs,
+                hits: hits,
+                rbi: rbi,
+                walks: walks,
+                strikeouts: strikeouts,
+                lob: lob,
+                avg: avg,
+                onbaseperc: onbaseperc,
+                onbase_slugging: onbase_slugging,
+                id: id,
+                game_id: game_id
+            });
+        }
+    }
+
+}
 
 var identifyTeamById = function (teamid) {
     return new Promise(function (resolve, reject) {

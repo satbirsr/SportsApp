@@ -20,8 +20,6 @@ li, tr:hover {
     background: rgba(0,0,0,0.2);
 } 
 
-
-
 .form-group {
     width: 300px;
     margin: 10px auto;
@@ -31,14 +29,39 @@ li, tr:hover {
 /* .increase-popover-width {
    max-width: 800px;
 }
+*/
 
 .popover-content {
-width: 500px;
-} */
+    height: 650px;
+    overflow-y: auto;
+} 
 
 .popover {
-    max-width: 800px; /* optional max width */
+    max-width: 900px; /* optional max width */
     width: intrinsic; /* Safari/WebKit uses a non-standard name */
     width: -moz-max-content; /* Firefox/Gecko */
     width: -webkit-max-content; /* Chrome */
+    top: 0px !important;
+    position: fixed; /* Set the popover to fixed position */
+    background: black;
+    /* overflow: hidden; */
+}
+
+.popover .arrow {
+    visibility:hidden;
+}
+
+.table#popoverTable {
+    border-spacing: 10px 1px;
+    border: 2px solid orange;
+    padding: 2px 5px 5px 2px;
+}
+
+td {
+  width: 20px;
+  height: 10px;
+  padding: 2px 5px 5px 2px;
+  font-size:11px
+  
+  /* text-align: center; */
 }
